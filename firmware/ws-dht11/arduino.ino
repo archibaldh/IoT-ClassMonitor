@@ -1,19 +1,21 @@
 #include <WiFi.h>
 
 // WiFi credentials
-const char* ssid = "your ssid";
-const char* password = "your wifi password";
+const char* ssid = "TelstraE847BC"; //Wifi SSID; sometimes referred to as WiFi name
+const char* password = "69c33uvm4f"; //WiFi Passowrd
 
 // Node.js server details
-const char* serverIP = "123.456.789.012";  // IPv4 of your computer (type "ipconfig" in terminal if you're not sure what it is)
+const char* serverIP = "192.168.0.246";  // Make sure this is the IP of your computer running the server (If you're not sure, type "ipconfig" into windows terminal. It should be under "IPv4 Address", in the "Wireless LAN adapter WiFi" section)
 const int serverPort = 2467;
+char* loudnessCheck;
+int value;
 
 void setup() {
   Serial.begin(9600);
 
-  // Connect to Wi-Fi
+  // Connecting to Wifi router established by variables ssid & password
   WiFi.begin(ssid, password);
-  while (WiFi.status() != WL_CONNECTED) { //If wifi is NOT connected, print "Connecting to wifi" to console every second. Once wifi is connected print "Connected to wifi"
+  while (WiFi.status() != WL_CONNECTED) {
     delay(1000);
     Serial.println("Connecting to WiFi...");
   }
@@ -21,29 +23,23 @@ void setup() {
 }
 
 void loop() {
-  int value = analogRead(33);  // Read sensor value
-
-  Serial.print("Sound value: ");
-  Serial.println(value);
- 
-  if (value >= 300) //Adjust this number depending on how loud you want your class to be and how your board is positioned
-    Serial.println("Too loud!");
+  value = analogRead(33); //Set to pin plugged into sound sensor
+  if (value >= 250) //Change this to make sensor less or more sensitive
+    loudnessCheck = "Too Loud!";
   else
-    Serial.println("Keep it quiet");
+    loudnessCheck = "Good Volume.";
 
-  // Send the value to the Node.js server
-  sendToServer(value);
-  Serial.println("Value sent: " + String(value));
-
+  // Send the moisture value to the Node.js server
+  sendToServer(loudnessCheck, value);
   delay(250);
 }
 
-void sendToServer(int soundValue) {
-  WiFiClient client;
-
+void sendToServer(const char* loudness, int sensorValue) { //set variables loudnessCheck & value to loudness & sensorValue respectively (avoids issues with scope)
+     
+  WiFiClient client;   
   if (client.connect(serverIP, serverPort)) {
     // Form the HTTP POST request
-    String postData = "sound=" + String(soundValue);
+    String postData = "sound=" + String(sensorValue) + ", " + loudness;  //Send text displaying relevant data to the server
     client.print(String("POST /update HTTP/1.1\r\n") +
                  "Host: " + serverIP + "\r\n" +
                  "Content-Type: application/x-www-form-urlencoded\r\n" +
@@ -60,6 +56,6 @@ void sendToServer(int soundValue) {
 
     client.stop();
   } 
-  else {Serial.println("Failed to connect to server");
+  else {Serial.println("Failed to connect to server"); //If esp cannot connect to the server, print an error to the console.
   }
 }

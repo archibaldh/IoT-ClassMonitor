@@ -5,6 +5,7 @@ const ejs = require('ejs');
 
 const app = express();
 let soundValue;
+let bgHue;
 
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(express.static(path.join(__dirname, 'public'), {
